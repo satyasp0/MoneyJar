@@ -1,10 +1,13 @@
 package org.persona.moneyjar.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.persona.moneyjar.enums.TransactionType;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * @author Satya
@@ -12,11 +15,14 @@ import java.math.BigDecimal;
  **/
 @Data
 public class TransactionDTO {
-    @NotBlank(message = "Type is mandatory")
+    @NotNull(message = "Card Id is mandatory")
+    private UUID cardId;
+    @NotNull(message = "Type is mandatory")
     private TransactionType type;
-    @NotBlank(message = "Amount is mandatory")
+    @NotNull(message = "Amount is mandatory")
     private BigDecimal amount;
     @NotBlank(message = "Note is mandatory")
     private String note;
     private String description;
+    private LocalDateTime createdAt;
 }

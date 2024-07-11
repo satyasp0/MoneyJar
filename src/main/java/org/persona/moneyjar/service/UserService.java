@@ -1,9 +1,7 @@
 package org.persona.moneyjar.service;
 
 import org.persona.moneyjar.dto.UserDTO;
-import org.persona.moneyjar.entity.User;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,12 +11,8 @@ import java.util.UUID;
  **/
 public interface UserService {
 
-
-
-    Optional<User> findByUsername(String username);
     String createUser(UserDTO user);
-    Optional<User> findUserById(UUID id);
+    Optional<UserDTO> findUserById(UUID id);
     boolean updateUser(UUID id, UserDTO user);
     boolean deleteUser(UUID id);
-    List<User> getAllUser();
 }

@@ -8,10 +8,10 @@ import org.persona.moneyjar.service.UserService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
+
+import static org.persona.moneyjar.utils.MapperUtils.updateField;
 
 /**
  * @author Satya
@@ -23,21 +23,12 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+
     public UserServiceImpl(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
     }
 
-    private void updateField(String newValue, Consumer<String> setter) {
-        if (newValue != null && !newValue.trim().isEmpty()) {
-            setter.accept(newValue);
-        }
-    }
-
-    @Override
-    public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
 
     @Override
     public String createUser(UserDTO user) {
@@ -45,16 +36,15 @@ public class UserServiceImpl implements UserService {
             User userEntity = userMapper.dtoToEntity(user);
             return userRepository.save(userEntity).getId().toString();
         } catch (DataIntegrityViolationException e) {
-            if (isDuplicateKeyException(e)) {
-                return null;
-            }
-            throw e;
+            return null;
+
         }
     }
 
     @Override
-    public Optional<User> findUserById(UUID id) {
-        return userRepository.findById(id);
+    public Optional<UserDTO> findUserById(UUID id) {
+        Optional<User> user = userRepository.findById(id);
+        return user.map(userMapper::entityToDto);
     }
 
     @Override
@@ -70,26 +60,17 @@ public class UserServiceImpl implements UserService {
 
             userRepository.save(existingUser);
             return true;
-        }else return false;
+        } else return false;
     }
 
     @Override
     public boolean deleteUser(UUID id) {
-        if (userRepository.findById(id).isPresent()) {
-            userRepository.deleteById(id);
+        Optional<User> userOptional = userRepository.findById(id);
+        if (userOptional.isPresent()) {
+            User existingUser = userOptional.get();
+            existingUser.setEnabled(false);
+            userRepository.save(existingUser);
             return true;
-        }else return false;
-    }
-
-    @Override
-    public List<User> getAllUser() {
-        return userRepository.findAll();
-    }
-
-    public boolean isDuplicateKeyException(DataIntegrityViolationException e) {
-        String message = e.getMostSpecificCause().getMessage().toLowerCase();
-        return message.contains("constraint")
-                || message.contains("duplicate")
-                || message.contains("unique");
+        } else return false;
     }
 }
