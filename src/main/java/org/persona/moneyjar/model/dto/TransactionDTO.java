@@ -1,4 +1,4 @@
-package org.persona.moneyjar.dto;
+package org.persona.moneyjar.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +7,7 @@ import org.persona.moneyjar.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
+
 
 /**
  * @author Satya
@@ -16,7 +16,7 @@ import java.util.UUID;
 @Data
 public class TransactionDTO {
     @NotNull(message = "Card Id is mandatory")
-    private UUID cardId;
+    private Long cardId;
     @NotNull(message = "Type is mandatory")
     private TransactionType type;
     @NotNull(message = "Amount is mandatory")

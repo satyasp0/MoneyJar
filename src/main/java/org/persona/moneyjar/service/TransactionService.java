@@ -1,10 +1,9 @@
 package org.persona.moneyjar.service;
 
-import org.persona.moneyjar.dto.TransactionDTO;
+import org.persona.moneyjar.model.dto.TransactionDTO;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+
 
 /**
  * @author Satya
@@ -12,9 +11,9 @@ import java.util.UUID;
  **/
 public interface TransactionService {
     String createTransaction(TransactionDTO transaction);
-    Optional<TransactionDTO> findTransactionById(UUID id);
-    boolean updateTransaction(UUID id, TransactionDTO transaction);
-    boolean deleteTransaction(UUID id);
-    Optional<List<TransactionDTO>> findTransactionByCardId(UUID id);
-    Optional<List<TransactionDTO>> findTransactionByUserId(UUID id);
+    TransactionDTO findTransactionById(Long id);
+    void updateTransaction(Long id, TransactionDTO transaction);
+    void deleteTransaction(Long id);
+    List<TransactionDTO> findTransactionByCardId(Long id);
+    List<TransactionDTO> findTransactionByUser();
 }

@@ -19,4 +19,12 @@ public class TransactionUtils {
             return current.subtract(amount);
         }
     }
+
+    public static BigDecimal calculateUpdateTransaction(BigDecimal current, BigDecimal before, BigDecimal after, TransactionType type) {
+        if (type.equals(TransactionType.INCOME)){
+            return current.subtract(before).add(after);
+        }else {
+            return current.add(before).subtract(after);
+        }
+    }
 }

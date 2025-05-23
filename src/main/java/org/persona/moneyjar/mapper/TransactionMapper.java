@@ -1,7 +1,7 @@
 package org.persona.moneyjar.mapper;
 
-import org.persona.moneyjar.dto.TransactionDTO;
-import org.persona.moneyjar.entity.Transaction;
+import org.persona.moneyjar.model.dto.TransactionDTO;
+import org.persona.moneyjar.model.entity.Transaction;
 import org.springframework.stereotype.Component;
 
 /**
@@ -19,6 +19,7 @@ public class TransactionMapper {
         transaction.setType(dto.getType());
         transaction.setNote(dto.getNote());
         transaction.setAmount(dto.getAmount());
+        transaction.setCardId(dto.getCardId());
         return transaction;
     }
 
@@ -28,7 +29,7 @@ public class TransactionMapper {
         transactionDTO.setDescription(transaction.getDescription());
         transactionDTO.setType(transaction.getType());
         transactionDTO.setNote(transaction.getNote());
-        transactionDTO.setCardId(transaction.getCard().getId());
+        transactionDTO.setCardId(transaction.getCardId());
         transactionDTO.setCreatedAt(transaction.getCreatedAt());
         return transactionDTO;
     }

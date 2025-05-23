@@ -1,4 +1,4 @@
-package org.persona.moneyjar.dto;
+package org.persona.moneyjar.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

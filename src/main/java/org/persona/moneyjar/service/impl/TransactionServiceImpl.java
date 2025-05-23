@@ -1,22 +1,26 @@
 package org.persona.moneyjar.service.impl;
 
-import org.persona.moneyjar.dto.TransactionDTO;
-import org.persona.moneyjar.entity.Card;
-import org.persona.moneyjar.entity.Transaction;
+import lombok.RequiredArgsConstructor;
+import org.persona.moneyjar.enums.TransactionType;
+import org.persona.moneyjar.exception.MoneyJarException;
+import org.persona.moneyjar.model.dto.TransactionDTO;
+import org.persona.moneyjar.model.entity.Card;
+import org.persona.moneyjar.model.entity.Transaction;
 import org.persona.moneyjar.mapper.TransactionMapper;
 import org.persona.moneyjar.repository.CardRepository;
 import org.persona.moneyjar.repository.TransactionRepository;
-import org.persona.moneyjar.repository.UserRepository;
 import org.persona.moneyjar.service.TransactionService;
+import org.persona.moneyjar.utils.JwtInformationUtil;
+import org.persona.moneyjar.utils.TransactionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 
 import static org.persona.moneyjar.utils.MapperUtils.*;
-import static org.persona.moneyjar.utils.TransactionUtils.calculateTransaction;
 
 /**
  * @author Satya
@@ -24,100 +28,80 @@ import static org.persona.moneyjar.utils.TransactionUtils.calculateTransaction;
  **/
 
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final CardRepository cardRepository;
     private final TransactionMapper transactionMapper;
-    private final UserRepository userRepository;
-
-    public TransactionServiceImpl(TransactionRepository transactionRepository,
-                                  CardRepository cardRepository,
-                                  TransactionMapper transactionMapper,
-                                  UserRepository userRepository) {
-        this.transactionRepository = transactionRepository;
-        this.cardRepository = cardRepository;
-        this.transactionMapper = transactionMapper;
-        this.userRepository = userRepository;
-    }
 
     @Override
     public String createTransaction(TransactionDTO dto) {
         Optional<Card> cardOptional = cardRepository.findById(dto.getCardId());
-        if (cardOptional.isPresent()) {
-            Card card = cardOptional.get();
-            BigDecimal afterTrasaction = calculateTransaction(card.getAmount(), dto.getAmount(), dto.getType());
-            Transaction transactionToSave = transactionMapper.dtoToEntity(dto);
-            transactionToSave.setCard(cardOptional.get());
-            transactionToSave.setInitialBalance(card.getAmount());
-            transactionToSave.setFinalBalance(afterTrasaction);
-            Transaction successTransaction = transactionRepository.saveAndFlush(transactionToSave);
-            card.setAmount(afterTrasaction);
-            cardRepository.save(card);
-            return successTransaction.getId().toString();
-        }
-        return null;
+        if (cardOptional.isEmpty()) throw MoneyJarException.cardNotFoundError();
+        Card card = cardOptional.get();
+        BigDecimal afterTransaction = TransactionUtils.calculateTransaction(card.getAmount(), dto.getAmount(), dto.getType());
+        Transaction transactionToSave = transactionMapper.dtoToEntity(dto);
+        transactionToSave.setInitialBalance(card.getAmount());
+        transactionToSave.setFinalBalance(afterTransaction);
+        Transaction successTransaction = transactionRepository.saveAndFlush(transactionToSave);
+        card.setAmount(afterTransaction);
+        cardRepository.save(card);
+        return successTransaction.getId().toString();
     }
 
     @Override
-    public Optional<TransactionDTO> findTransactionById(UUID id) {
+    public TransactionDTO findTransactionById(Long id) {
         Optional<Transaction> transaction = transactionRepository.findById(id);
-        return transaction.map(transactionMapper::entityToDto);
+        if (transaction.isEmpty()) throw MoneyJarException.transactionNotFoundError();
+        return transactionMapper.entityToDto(transaction.get());
     }
 
     @Override
-    public boolean updateTransaction(UUID id, TransactionDTO dto) {
+    public void updateTransaction(Long id, TransactionDTO dto) {
         Optional<Transaction> transactionOptional = transactionRepository.findById(id);
-        if (transactionOptional.isPresent()) {
-            Transaction transactionToUpdate = transactionOptional.get();
-            updateField(dto.getDescription(),transactionToUpdate::setDescription);
-            updateField(dto.getNote(),transactionToUpdate::setNote);
-            updateTransactionType(dto.getType(),transactionToUpdate::setType);
-            updateBigDecimal(dto.getAmount(),transactionToUpdate::setAmount);
-            Transaction updated = transactionRepository.save(transactionToUpdate);
-            updateCard(updated);
-        }
-        return false;
+        if (transactionOptional.isEmpty()) throw MoneyJarException.transactionNotFoundError();
+        BigDecimal prevAmount = transactionOptional.get().getAmount();
+        Transaction transactionToUpdate = transactionOptional.get();
+        BigDecimal afterTransaction = TransactionUtils.calculateUpdateTransaction(transactionToUpdate.getFinalBalance(),transactionToUpdate.getAmount(), dto.getAmount(), dto.getType());
+        updateField(dto.getDescription(), transactionToUpdate::setDescription);
+        updateField(dto.getNote(), transactionToUpdate::setNote);
+        updateTransactionType(dto.getType(), transactionToUpdate::setType);
+        updateBigDecimal(dto.getAmount(), transactionToUpdate::setAmount);
+        updateBigDecimal(afterTransaction, transactionToUpdate::setFinalBalance);
+        transactionRepository.save(transactionToUpdate);
+        updateCard(transactionOptional.get().getCardId(), prevAmount, dto.getAmount(), transactionOptional.get().getType());
     }
 
     @Override
-    public boolean deleteTransaction(UUID id) {
+    public void deleteTransaction(Long id) {
         Optional<Transaction> transaction = transactionRepository.findById(id);
-        if (transaction.isPresent()) {
-            transactionRepository.delete(transaction.get());
-            updateCard(transaction.get());
-            return true;
-        }else {
-            return false;
-        }
+        if (transaction.isEmpty()) throw MoneyJarException.transactionNotFoundError();
+        transactionRepository.delete(transaction.get());
+        updateCard(transaction.get().getCardId(), transaction.get().getAmount(), BigDecimal.valueOf(0), transaction.get().getType());
     }
 
     @Override
-    public Optional<List<TransactionDTO>> findTransactionByCardId(UUID id) {
-        Optional<Card> optionalCard = cardRepository.findById(id);
-        if (optionalCard.isPresent()){
-            List<Transaction> optionalTransactions = transactionRepository.findTransactionsByCardIdOrderByCreatedAtDesc(id);
-            return Optional.of(optionalTransactions.stream().map(transactionMapper::entityToDto).toList());
-        }
-        return Optional.empty();
+    public List<TransactionDTO> findTransactionByCardId(Long id) {
+        List<Transaction> transactions = transactionRepository.findTransactionsByCardIdOrderByCreatedAtDesc(id);
+        return transactions.stream()
+                .map(transactionMapper::entityToDto)
+                .toList();
     }
 
     @Override
-    public Optional<List<TransactionDTO>> findTransactionByUserId(UUID id) {
-        if(userRepository.findById(id).isPresent()){
-            List<Transaction> transactionList = transactionRepository.findTransactionsByCardUserIdOrderByCreatedAtDesc(id);
-            return Optional.of(transactionList.stream().map(transactionMapper::entityToDto).toList());
-        }
-        return Optional.empty();
+    public List<TransactionDTO> findTransactionByUser() {
+        List<Transaction> transactionList = transactionRepository.findTransactionsByUserId(JwtInformationUtil.getUserDetails().getId());
+        return transactionList.stream().map(transactionMapper::entityToDto).toList();
     }
 
-    private void updateCard(Transaction transaction) {
-        Optional<Card> card = cardRepository.findById(transaction.getCard().getId());
-        if(card.isPresent()){
-            BigDecimal afterTrasaction = calculateTransaction(card.get().getAmount(), transaction.getAmount(), transaction.getType());
-            Card existCard = card.get();
-            existCard.setAmount(afterTrasaction);
-            cardRepository.save(existCard);
-        }
+    private void updateCard(Long cardId, BigDecimal before, BigDecimal after, TransactionType type) {
+        Optional<Card> card = cardRepository.findById(cardId);
+        if (card.isEmpty()) throw MoneyJarException.cardNotFoundError();
+        BigDecimal afterTransaction = TransactionUtils.calculateUpdateTransaction(card.get().getAmount(), before, after, type);
+        Card existCard = card.get();
+        existCard.setAmount(afterTransaction);
+        cardRepository.save(existCard);
     }
 }
