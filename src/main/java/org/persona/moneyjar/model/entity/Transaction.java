@@ -1,11 +1,12 @@
-package org.persona.moneyjar.entity;
+package org.persona.moneyjar.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.persona.moneyjar.enums.TransactionType;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+
 
 /**
  * @author Satya
@@ -13,15 +14,15 @@ import java.util.UUID;
  **/
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "transactions")
-public class Transaction extends BaseEnitity {
+public class Transaction extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
-    @ManyToOne
-    @JoinColumn(name = "card_id")
-    private Card card;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(name = "card_id")
+    private Long cardId;
     private TransactionType type;
     private BigDecimal amount;
     @Column(name = "initial_balance")

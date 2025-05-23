@@ -1,8 +1,7 @@
 package org.persona.moneyjar.mapper;
 
-import org.persona.moneyjar.dto.CardDTO;
-import org.persona.moneyjar.entity.Card;
-import org.persona.moneyjar.entity.User;
+import org.persona.moneyjar.model.dto.CardDTO;
+import org.persona.moneyjar.model.entity.Card;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,12 +10,10 @@ import org.springframework.stereotype.Component;
  **/
 @Component
 public class CardMapper {
-
-
-    public Card dtoToEnitity(CardDTO cardDTO, User user) {
+    public Card dtoToEnitity(CardDTO cardDTO, Long userId) {
         Card card = new Card();
         card.setName(cardDTO.getName());
-        card.setUser(user);
+        card.setUserId(userId);
         card.setCardType(cardDTO.getType());
         card.setAmount(cardDTO.getAmount());
         return card;
@@ -26,7 +23,6 @@ public class CardMapper {
         CardDTO cardDTO = new CardDTO();
         cardDTO.setId(card.getId());
         cardDTO.setName(card.getName());
-        cardDTO.setUserId(card.getUser().getId());
         cardDTO.setType(card.getCardType());
         cardDTO.setAmount(card.getAmount());
         return cardDTO;

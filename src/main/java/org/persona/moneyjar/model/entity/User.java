@@ -1,26 +1,24 @@
-package org.persona.moneyjar.entity;
+package org.persona.moneyjar.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * @author Satya
  * @created 04/07/2024 - 14:16
  **/
 
-@EqualsAndHashCode(callSuper = true)
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "users")
-public class User extends BaseEnitity {
+public class User extends BaseEntity {
     @Id
     @Column(name = "user_id")
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String password;
     private String name;
     private String picture;
@@ -28,7 +26,5 @@ public class User extends BaseEnitity {
     private String username;
     @Column(unique = true, nullable = false)
     private String email;
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Set<Card> cards;
     private boolean enabled = true;
 }

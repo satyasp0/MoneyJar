@@ -1,7 +1,7 @@
 package org.persona.moneyjar.mapper;
 
-import org.persona.moneyjar.dto.UserDTO;
-import org.persona.moneyjar.entity.User;
+import org.persona.moneyjar.model.dto.UserDTO;
+import org.persona.moneyjar.model.entity.User;
 import org.springframework.stereotype.Component;
 
 /**

@@ -1,6 +1,6 @@
 package org.persona.moneyjar.controller;
 
-import org.persona.moneyjar.dto.BaseResponseDto;
+import org.persona.moneyjar.model.dto.BaseResponseDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;

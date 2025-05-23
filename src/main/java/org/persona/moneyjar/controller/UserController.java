@@ -1,16 +1,12 @@
 package org.persona.moneyjar.controller;
 
 import jakarta.validation.constraints.NotNull;
-import org.persona.moneyjar.contants.MessageConstants;
-import org.persona.moneyjar.dto.BaseResponseDto;
-import org.persona.moneyjar.dto.UserDTO;
+import org.persona.moneyjar.model.dto.BaseResponseDto;
+import org.persona.moneyjar.model.dto.UserDTO;
 import org.persona.moneyjar.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * @author Satya
@@ -28,40 +24,26 @@ public class UserController extends BaseController {
 
     @PostMapping
     public ResponseEntity<BaseResponseDto> createUser(@Validated @RequestBody UserDTO user) {
-        String id = userService.createUser(user);
-        if(id!=null){
-            return send201(id);
-        }else {
-            return send400(MessageConstants.CREATE_FAILED);
-        }
+        Long id = userService.createUser(user);
+        return send201(id);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BaseResponseDto> getUserById(@PathVariable UUID id) {
-        Optional<UserDTO> userOptional = userService.findUserById(id);
-        if(userOptional.isPresent()){
-            return send200(userOptional);
-        }else{
-            return send404(MessageConstants.USER_NOT_FOUND);
-        }
+    public ResponseEntity<BaseResponseDto> getUserById(@PathVariable Long id) {
+        UserDTO userOptional = userService.findUserById(id);
+        return send200(userOptional);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BaseResponseDto> updateUser(@NotNull(message = "id can not be null") @PathVariable UUID id, @RequestBody UserDTO user) {
-        if (userService.updateUser(id, user)){
-            return send200(MessageConstants.USER_UPDATED);
-        }else {
-            return send404(MessageConstants.USER_NOT_FOUND);
-        }
+    public ResponseEntity<BaseResponseDto> updateUser(@NotNull(message = "id can not be null") @PathVariable Long id, @RequestBody UserDTO user) {
+        userService.updateUser(id, user);
+        return send200("user updated successfully");
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<BaseResponseDto> deleteUser(@PathVariable UUID id) {
-        if (userService.deleteUser(id)) {
-            return send200(MessageConstants.USER_DELETED);
-        } else {
-            return send404(MessageConstants.USER_NOT_FOUND);
-        }
+    public ResponseEntity<BaseResponseDto> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return send200("user deleted successfully");
     }
 }
 

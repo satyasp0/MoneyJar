@@ -1,9 +1,8 @@
 package org.persona.moneyjar.service;
 
-import org.persona.moneyjar.dto.CardDTO;
+import org.persona.moneyjar.model.dto.CardDTO;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Satya
@@ -11,13 +10,13 @@ import java.util.UUID;
  **/
 public interface CardService {
 
-    String createCard(CardDTO cardDTO);
+    Long createCard(CardDTO cardDTO);
 
-    CardDTO getCardById(UUID id);
+    CardDTO getCardById(Long id);
 
-    boolean updateCard(UUID cardId, CardDTO cardDTO);
+    void updateCard(Long cardId, CardDTO cardDTO);
 
-    boolean deleteCard(UUID cardId);
+    void deleteCard(Long cardId);
 
-    List<CardDTO> getAllCardsByUserId(UUID userId);
+    List<CardDTO> getAllCardsByUser();
 }

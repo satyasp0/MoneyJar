@@ -1,18 +1,19 @@
 package org.persona.moneyjar.service.impl;
 
-import org.persona.moneyjar.dto.CardDTO;
-import org.persona.moneyjar.entity.Card;
-import org.persona.moneyjar.entity.User;
+import lombok.RequiredArgsConstructor;
+import org.persona.moneyjar.exception.MoneyJarException;
+import org.persona.moneyjar.model.dto.CardDTO;
+import org.persona.moneyjar.model.entity.Card;
 import org.persona.moneyjar.mapper.CardMapper;
 import org.persona.moneyjar.repository.CardRepository;
-import org.persona.moneyjar.repository.UserRepository;
 import org.persona.moneyjar.service.CardService;
+import org.persona.moneyjar.utils.JwtInformationUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
 
 import static org.persona.moneyjar.utils.MapperUtils.updateCardType;
 import static org.persona.moneyjar.utils.MapperUtils.updateField;
@@ -22,67 +23,45 @@ import static org.persona.moneyjar.utils.MapperUtils.updateField;
  * @created 09/07/2024 - 10:00
  **/
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
-    private final UserRepository userRepository;
     private final CardMapper cardMapper;
 
-    public CardServiceImpl(CardRepository cardRepository, CardMapper cardMapper, UserRepository userRepository) {
-        this.cardRepository = cardRepository;
-        this.cardMapper = cardMapper;
-        this.userRepository = userRepository;
+    @Override
+    public Long createCard(CardDTO cardDTO) {
+            Card card = cardMapper.dtoToEnitity(cardDTO, JwtInformationUtil.getUserDetails().getId());
+            return cardRepository.save(card).getId();
     }
 
     @Override
-    public String createCard(CardDTO cardDTO) {
-        Optional<User> newUser = userRepository.findById(cardDTO.getUserId());
-        if (newUser.isPresent()) {
-            Card card = cardMapper.dtoToEnitity(cardDTO, newUser.get());
-            Card savedCard = cardRepository.save(card);
-            return Optional.of(savedCard.getId().toString()).orElse(null);
-        } else {
-            return null;
-        }
-
+    public CardDTO getCardById(Long id) {
+        Optional<Card> optionalCard = cardRepository.findCardByIdAndUserId(id, JwtInformationUtil.getUserDetails().getId());
+        if(optionalCard.isEmpty()) throw MoneyJarException.cardNotFoundError();
+        return cardMapper.enitityToDto(optionalCard.get());
     }
 
     @Override
-    public CardDTO getCardById(UUID id) {
-        Optional<Card> optionalCard = cardRepository.findById(id);
-        return optionalCard.map(cardMapper::enitityToDto).orElse(null);
+    public void updateCard(Long cardId, CardDTO cardDTO) {
+        Optional<Card> optionalCard = cardRepository.findCardByIdAndUserId(cardId, JwtInformationUtil.getUserDetails().getId());
+        if(optionalCard.isEmpty()) throw MoneyJarException.cardNotFoundError();
+        Card existingCard = optionalCard.get();
+        updateField(cardDTO.getName(), existingCard::setName);
+        updateCardType(cardDTO.getType(), existingCard::setCardType);
+        cardRepository.save(existingCard);
     }
 
     @Override
-    public boolean updateCard(UUID cardId, CardDTO cardDTO) {
-        Optional<Card> optionalCard = cardRepository.findById(cardId);
-        if (optionalCard.isPresent()) {
-            Card existingCard = optionalCard.get();
-            updateField(cardDTO.getName(), existingCard::setName);
-            updateCardType(cardDTO.getType(), existingCard::setCardType);
-
-            cardRepository.save(existingCard);
-            return true;
-        } else return false;
+    public void deleteCard(Long cardId) {
+        Optional<Card> optionalCard = cardRepository.findCardByIdAndUserId(cardId, JwtInformationUtil.getUserDetails().getId());
+        if(optionalCard.isEmpty()) throw MoneyJarException.cardNotFoundError();
+        cardRepository.delete(optionalCard.get());
     }
 
     @Override
-    public boolean deleteCard(UUID cardId) {
-        Optional<Card> optionalCard = cardRepository.findById(cardId);
-        if (optionalCard.isPresent()) {
-            cardRepository.delete(optionalCard.get());
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public List<CardDTO> getAllCardsByUserId(UUID userId) {
-        if (userRepository.findById(userId).isPresent()) {
-            List<Card> cardList = cardRepository.findCardsByUserId(userId);
+    public List<CardDTO> getAllCardsByUser() {
+            List<Card> cardList = cardRepository.findCardsByUserId(JwtInformationUtil.getUserDetails().getId());
             return cardList.stream().map(cardMapper::enitityToDto).toList();
-        }else {
-            return Collections.emptyList();
-        }
     }
 }

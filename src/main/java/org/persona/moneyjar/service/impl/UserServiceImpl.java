@@ -1,15 +1,16 @@
 package org.persona.moneyjar.service.impl;
 
-import org.persona.moneyjar.dto.UserDTO;
-import org.persona.moneyjar.entity.User;
+import org.persona.moneyjar.exception.MoneyJarException;
+import org.persona.moneyjar.model.dto.UserDTO;
+import org.persona.moneyjar.model.entity.User;
 import org.persona.moneyjar.mapper.UserMapper;
 import org.persona.moneyjar.repository.UserRepository;
 import org.persona.moneyjar.service.UserService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.persona.moneyjar.utils.MapperUtils.updateField;
 
@@ -19,6 +20,7 @@ import static org.persona.moneyjar.utils.MapperUtils.updateField;
  **/
 
 @Service
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -31,46 +33,40 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public String createUser(UserDTO user) {
+    public Long createUser(UserDTO user) {
         try {
             User userEntity = userMapper.dtoToEntity(user);
-            return userRepository.save(userEntity).getId().toString();
+            return userRepository.save(userEntity).getId();
         } catch (DataIntegrityViolationException e) {
-            return null;
-
+            throw MoneyJarException.userCreationError();
         }
     }
 
     @Override
-    public Optional<UserDTO> findUserById(UUID id) {
+    public UserDTO findUserById(Long id) {
         Optional<User> user = userRepository.findById(id);
-        return user.map(userMapper::entityToDto);
+        if (user.isEmpty()) throw MoneyJarException.userNotFoundError();
+        return userMapper.entityToDto(user.get());
     }
 
     @Override
-    public boolean updateUser(UUID id, UserDTO user) {
+    public void updateUser(Long id, UserDTO user) {
         Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent()) {
-            User existingUser = userOptional.get();
-            updateField(user.getUsername(), existingUser::setUsername);
-            updateField(user.getPassword(), existingUser::setPassword);
-            updateField(user.getName(), existingUser::setName);
-            updateField(user.getPicture(), existingUser::setPicture);
-            updateField(user.getEmail(), existingUser::setEmail);
-
-            userRepository.save(existingUser);
-            return true;
-        } else return false;
+        if (userOptional.isEmpty()) throw MoneyJarException.userNotFoundError();
+        updateField(user.getUsername(), userOptional.get()::setUsername);
+        updateField(user.getPassword(), userOptional.get()::setPassword);
+        updateField(user.getName(), userOptional.get()::setName);
+        updateField(user.getPicture(), userOptional.get()::setPicture);
+        updateField(user.getEmail(), userOptional.get()::setEmail);
+        userRepository.save(userOptional.get());
     }
 
     @Override
-    public boolean deleteUser(UUID id) {
+    public void deleteUser(Long id) {
         Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent()) {
-            User existingUser = userOptional.get();
-            existingUser.setEnabled(false);
-            userRepository.save(existingUser);
-            return true;
-        } else return false;
+        if (userOptional.isEmpty()) throw MoneyJarException.userNotFoundError();
+        User existingUser = userOptional.get();
+        existingUser.setEnabled(false);
+        userRepository.save(existingUser);
     }
 }

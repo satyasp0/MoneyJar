@@ -1,10 +1,10 @@
-package org.persona.moneyjar.dto;
+package org.persona.moneyjar.model.dto;
 
 import lombok.Data;
 import org.persona.moneyjar.enums.CardType;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+
 
 /**
  * @author Satya
@@ -12,9 +12,8 @@ import java.util.UUID;
  **/
 @Data
 public class CardDTO {
-    private UUID id;
+    private Long id;
     private String name;
-    private UUID userId;
     private CardType type;
     private BigDecimal amount = BigDecimal.ZERO;
 }
