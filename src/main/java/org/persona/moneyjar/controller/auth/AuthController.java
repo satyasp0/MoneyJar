@@ -1,5 +1,6 @@
 package org.persona.moneyjar.controller.auth;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.persona.moneyjar.controller.BaseController;
 import org.persona.moneyjar.model.dto.BaseResponseDto;
@@ -21,13 +22,19 @@ public class AuthController extends BaseController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<BaseResponseDto> login(@RequestHeader(name = "Authorization") String authHeader) {
+    public ResponseEntity<BaseResponseDto> login(@RequestHeader(name = "Authorization") String authHeader, HttpServletRequest httpRequest) {
         if (authHeader == null || !authHeader.startsWith("Basic ")) {
             return send400("Missing or invalid Authorization header");
         }
-        String jwtToken = authService.authenticate(authHeader.substring("Basic ".length()).trim());
+        String jwtToken = authService.authenticate(authHeader.substring("Basic ".length()).trim(), httpRequest);
         if (Objects.isNull(jwtToken)) return send400("Unauthorized");
         return send200(jwtToken);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<BaseResponseDto> logout(@RequestHeader(name = "Authorization") String authHeader) {
+        authService.logout(authHeader.substring(7));
+        return send200("Logout successful");
     }
 
 }

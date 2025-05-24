@@ -6,8 +6,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.persona.moneyjar.model.dto.DeviceInfo;
+import org.persona.moneyjar.model.dto.UserSession;
 import org.persona.moneyjar.model.entity.User;
 import org.persona.moneyjar.repository.UserRepository;
+import org.persona.moneyjar.service.DeviceIdentifierService;
+import org.persona.moneyjar.service.SessionService;
 import org.persona.moneyjar.service.impl.JWTServiceImpl;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -32,9 +36,11 @@ import java.util.Optional;
 public class JWTRequestFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
     private final JWTServiceImpl jwtService;
+    private final DeviceIdentifierService deviceIdentifierService;
+    private final SessionService sessionService;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final List<String> excludedPaths = Arrays.asList(
-            "/auth/**",
+            "/auth/login",
             "/public/**",
             "/actuator/health"
     );
@@ -46,8 +52,9 @@ public class JWTRequestFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
+        String token = auth.substring(7);
 
-        Long userId = jwtService.verifyToken(auth.substring(7));
+        Long userId = jwtService.verifyToken(token);
         if (userId == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
@@ -57,9 +64,15 @@ public class JWTRequestFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        Authentication detail = new UsernamePasswordAuthenticationToken(user.get(), auth.substring(7), new ArrayList<>());
+        Authentication detail = new UsernamePasswordAuthenticationToken(user.get(), token, new ArrayList<>());
         SecurityContextHolder.getContext().setAuthentication(detail);
 
+        DeviceInfo currentDevice = deviceIdentifierService.extractDeviceInfo(request);
+        UserSession storedSession = sessionService.getSession(userId, token);
+        if (storedSession == null || !deviceIdentifierService.isDeviceMatch(currentDevice, storedSession.getDeviceInfo())) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
         filterChain.doFilter(request, response);
     }
 

@@ -1,8 +1,8 @@
 version: "3"
 services:
   db:
-    hostname: mysql
     image: mysql:8.4.1
+    hostname: mysql
     restart: always
     volumes:
       - db_data:/var/lib/mysql
@@ -11,5 +11,15 @@ services:
     ports:
       - 3306:3306
 
+  redis:
+    image: redis:7.2
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: [ "redis-server", "--appendonly", "yes" ]
+
 volumes:
   db_data:
+  redis_data:
